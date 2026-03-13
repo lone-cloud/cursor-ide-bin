@@ -1,0 +1,8 @@
+*.deb
+*.pkg.tar.*
+*.tar.xz
+*.tar.zst
+pkg/
+src/
+*.log
+check_result.json

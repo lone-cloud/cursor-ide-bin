@@ -1,0 +1,63 @@
+name: Update Cursor IDE Package
+
+on:
+  schedule:
+    # Check every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  check-and-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check for new version
+        id: check
+        run: |
+          python update.py --check > check_result.json
+          echo "result<<EOF" >> "$GITHUB_OUTPUT"
+          cat check_result.json >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          UPDATE=$(python -c "import json; d=json.load(open('check_result.json')); print('true' if d['update_available'] else 'false')")
+          echo "update_available=$UPDATE" >> "$GITHUB_OUTPUT"
+          echo "latest_version=$(python -c "import json; print(json.load(open('check_result.json'))['latest_version'])")" >> "$GITHUB_OUTPUT"
+
+      - name: Update PKGBUILD
+        if: steps.check.outputs.update_available == 'true'
+        run: |
+          python update.py --update
+          echo "Updated to version $(grep '^pkgver=' PKGBUILD | cut -d= -f2)"
+
+      - name: Publish to AUR
+        if: steps.check.outputs.update_available == 'true'
+        uses: KSXGitHub/github-actions-deploy-aur@v4
+        with:
+          pkgname: cursor-ide-bin
+          pkgbuild: ./PKGBUILD
+          commit_username: ${{ github.repository_owner }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          # Files to copy to AUR repo
+          assets: |
+            PKGBUILD
+            .SRCINFO
+            cursor.desktop
+            cursor-launcher.sh
+
+      - name: Commit updated PKGBUILD to GitHub
+        if: steps.check.outputs.update_available == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add PKGBUILD .SRCINFO
+          git commit -m "Update to Cursor ${{ steps.check.outputs.latest_version }}"
+          git push
