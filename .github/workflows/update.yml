@@ -13,33 +13,33 @@ jobs:
   check-and-update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-node@v6
         with:
-          python-version: '3.12'
+          node-version: '25'
 
       - name: Check for new version
         id: check
         run: |
-          python update.py --check > check_result.json
+          node update.ts --check > check_result.json
           echo "result<<EOF" >> "$GITHUB_OUTPUT"
           cat check_result.json >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
-          UPDATE=$(python -c "import json; d=json.load(open('check_result.json')); print('true' if d['update_available'] else 'false')")
+          UPDATE=$(node -e "const d=JSON.parse(require('fs').readFileSync('check_result.json','utf8')); console.log(d.update_available ? 'true' : 'false')")
           echo "update_available=$UPDATE" >> "$GITHUB_OUTPUT"
-          echo "latest_version=$(python -c "import json; print(json.load(open('check_result.json'))['latest_version'])")" >> "$GITHUB_OUTPUT"
+          echo "latest_version=$(node -e "const d=JSON.parse(require('fs').readFileSync('check_result.json','utf8')); console.log(d.latest_version)")" >> "$GITHUB_OUTPUT"
 
       - name: Update PKGBUILD
         if: steps.check.outputs.update_available == 'true'
         run: |
-          python update.py --update
+          node update.ts --update
           echo "Updated to version $(grep '^pkgver=' PKGBUILD | cut -d= -f2)"
 
       - name: Publish to AUR
         if: steps.check.outputs.update_available == 'true'
-        uses: KSXGitHub/github-actions-deploy-aur@v4
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
           pkgname: cursor-ide-bin
           pkgbuild: ./PKGBUILD

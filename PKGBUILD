@@ -12,29 +12,15 @@ conflicts=('cursor-bin')
 
 depends=(
   'alsa-lib'
-  'at-spi2-core'
-  'cairo'
   'dbus'
-  'expat'
   'gcc-libs'
-  'glib2'
   'gtk3'
   'hicolor-icon-theme'
   'libdrm'
   'libsecret'
-  'libx11'
-  'libxcb'
-  'libxcomposite'
-  'libxdamage'
-  'libxext'
-  'libxfixes'
-  'libxkbcommon'
   'libxkbfile'
-  'libxrandr'
   'mesa'
-  'nspr'
   'nss'
-  'pango'
   'xdg-utils'
 )
 optdepends=(
@@ -71,25 +57,19 @@ package() {
   install -Dm644 "$srcdir/cursor.desktop" \
     "$pkgdir/usr/share/applications/cursor.desktop"
 
-  # Install icons at proper sizes for KDE/GNOME
-  local _res_dir="$pkgdir/usr/share/cursor/resources/app/resources/linux"
-  if [[ -f "$_res_dir/code.png" ]]; then
-    install -Dm644 "$_res_dir/code.png" \
-      "$pkgdir/usr/share/icons/hicolor/512x512/apps/cursor.png"
-  fi
-  if [[ -f "$_res_dir/code.svg" ]]; then
-    install -Dm644 "$_res_dir/code.svg" \
-      "$pkgdir/usr/share/icons/hicolor/scalable/apps/cursor.svg"
-  fi
-  # Fallback from pixmaps
-  if [[ -f "$pkgdir/usr/share/pixmaps/cursor.png" ]] &&
-     [[ ! -f "$pkgdir/usr/share/icons/hicolor/512x512/apps/cursor.png" ]]; then
-    install -Dm644 "$pkgdir/usr/share/pixmaps/cursor.png" \
+  # Install icon to hicolor for KDE/GNOME
+  local _icon="$pkgdir/usr/share/pixmaps/co.anysphere.cursor.png"
+  if [[ -f "$_icon" ]]; then
+    install -Dm644 "$_icon" \
       "$pkgdir/usr/share/icons/hicolor/512x512/apps/cursor.png"
   fi
 
   # Install launcher
   install -Dm755 "$srcdir/cursor-launcher.sh" "$pkgdir/usr/bin/cursor"
+
+  # Install license
+  install -Dm644 "$pkgdir/usr/share/cursor/resources/app/LICENSE.txt" \
+    "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 
   # chrome-sandbox suid for non-user-namespace systems
   if [[ -f "$pkgdir/usr/share/cursor/chrome-sandbox" ]]; then

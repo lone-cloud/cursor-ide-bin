@@ -6,3 +6,4 @@ pkg/
 src/
 *.log
 check_result.json
+node_modules/
