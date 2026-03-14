@@ -4,7 +4,12 @@ on:
   schedule:
     # Check every 6 hours
     - cron: '0 */6 * * *'
-  workflow_dispatch: # Manual trigger
+  workflow_dispatch:
+    inputs:
+      force_publish:
+        description: 'Force publish current version to AUR'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -32,13 +37,13 @@ jobs:
           echo "latest_version=$(node -e "const d=JSON.parse(require('fs').readFileSync('check_result.json','utf8')); console.log(d.latest_version)")" >> "$GITHUB_OUTPUT"
 
       - name: Update PKGBUILD
-        if: steps.check.outputs.update_available == 'true'
+        if: steps.check.outputs.update_available == 'true' && !inputs.force_publish
         run: |
           node update.ts --update
           echo "Updated to version $(grep '^pkgver=' PKGBUILD | cut -d= -f2)"
 
       - name: Publish to AUR
-        if: steps.check.outputs.update_available == 'true'
+        if: steps.check.outputs.update_available == 'true' || inputs.force_publish
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
           pkgname: cursor-ide-bin
@@ -54,7 +59,7 @@ jobs:
             cursor-launcher.sh
 
       - name: Commit updated PKGBUILD to GitHub
-        if: steps.check.outputs.update_available == 'true'
+        if: steps.check.outputs.update_available == 'true' && !inputs.force_publish
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
