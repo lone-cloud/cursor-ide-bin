@@ -2,7 +2,7 @@
 
 pkgname=cursor-ide-bin
 pkgver=2.6.19
-pkgrel=2
+pkgrel=3
 pkgdesc='The AI Code Editor (uses bundled Electron)'
 arch=('x86_64')
 url="https://www.cursor.com"
