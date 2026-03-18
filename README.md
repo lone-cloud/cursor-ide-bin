@@ -6,6 +6,7 @@ Available on the [AUR](https://aur.archlinux.org/packages/cursor-ide-bin).
 
 ## Features
 
+- Tracks the official **stable** release channel (not pre-release/latest)
 - Uses Cursor's bundled Electron (no system electron dependency)
 - Icon trimmed and resized to fit desktop environment conventions
 
