@@ -18,7 +18,7 @@ interface VersionInfo {
 async function getLatestVersion(): Promise<VersionInfo> {
 	try {
 		const resp = await fetch(UPDATE_URL, {
-			headers: { "User-Agent": "cursor-ide-bin-updater/1.0" },
+			headers: { "User-Agent": "cursor-ide-updater/1.0" },
 			signal: AbortSignal.timeout(30_000),
 		});
 		const data = await resp.json();
@@ -63,7 +63,7 @@ function getCurrentVersion(pkgbuildPath: string): {
 async function computeSha256(url: string): Promise<string> {
 	console.error(`Downloading ${url} for checksum...`);
 	const resp = await fetch(url, {
-		headers: { "User-Agent": "cursor-ide-bin-updater/1.0" },
+		headers: { "User-Agent": "cursor-ide-updater/1.0" },
 		signal: AbortSignal.timeout(300_000),
 	});
 	if (!resp.ok || !resp.body) {

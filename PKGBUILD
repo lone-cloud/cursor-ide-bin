@@ -1,14 +1,13 @@
 # Maintainer: lone-cloud <lonecloud604@pm.me>
 
-pkgname=cursor-ide-bin
+pkgname=cursor-ide
 pkgver=2.6.20
 pkgrel=1
-pkgdesc='The AI Code Editor (uses bundled Electron)'
+pkgdesc='The AI Code Editor, bundled Electron (upstream-compatible)'
 arch=('x86_64')
 url="https://www.cursor.com"
 license=('LicenseRef-Cursor_EULA')
 provides=('cursor')
-conflicts=('cursor-bin')
 makedepends=('imagemagick')
 
 depends=(

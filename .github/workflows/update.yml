@@ -46,7 +46,7 @@ jobs:
         if: steps.check.outputs.update_available == 'true' || inputs.force_publish
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
-          pkgname: cursor-ide-bin
+          pkgname: cursor-ide
           pkgbuild: ./PKGBUILD
           commit_username: ${{ github.repository_owner }}
           commit_email: ${{ secrets.AUR_EMAIL }}
