@@ -1,4 +1,3 @@
-import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -90,12 +89,83 @@ function updatePkgbuild(
 	writeFileSync(pkgbuildPath, text);
 }
 
-function generateSrcinfo(pkgbuildDir: string): string {
-	const result = execSync("makepkg --printsrcinfo", {
-		cwd: pkgbuildDir,
-		encoding: "utf-8",
-	});
-	return result;
+function generateSrcinfo(pkgbuildPath: string): string {
+	const text = readFileSync(pkgbuildPath, "utf-8");
+
+	const field = (re: RegExp): string => {
+		const m = text.match(re);
+		return m ? m[1].trim() : "";
+	};
+
+	const pkgver = field(/^pkgver=(.+)$/m);
+	const commit = field(/^_commit=(.+)$/m);
+
+	// Expand bash variables in a string
+	const expand = (s: string): string =>
+		s
+			.replace(/\$\{pkgver\}|\$pkgver/g, pkgver)
+			.replace(/\$\{_commit\}|\$_commit/g, commit);
+
+	const arrayField = (name: string): string[] => {
+		const re = new RegExp(`^${name}=\\(([\\s\\S]*?)\\)`, "m");
+		const m = text.match(re);
+		if (!m) return [];
+
+		const items: string[] = [];
+		for (const line of m[1].split("\n")) {
+			const stripped = line.replace(/#.*/, "").trim();
+			if (!stripped) continue;
+			// Quoted strings are kept whole (may contain spaces)
+			if (/^['"]/.test(stripped)) {
+				items.push(expand(stripped.replace(/^['"]|['"]$/g, "")));
+			} else {
+				// Unquoted: split on whitespace (e.g. "!strip !debug")
+				for (const tok of stripped.split(/\s+/)) {
+					if (tok) items.push(expand(tok));
+				}
+			}
+		}
+		return items;
+	};
+
+	const pkgname = field(/^pkgname=(.+)$/m);
+	const pkgrel = field(/^pkgrel=(.+)$/m);
+	const pkgdesc = field(/^pkgdesc=['"](.*?)['"]$/m);
+	const url = field(/^url=['"](.*?)['"]$/m);
+	const arch = arrayField("arch");
+	const license = arrayField("license");
+	const makedepends = arrayField("makedepends");
+	const depends = arrayField("depends");
+	const optdepends = arrayField("optdepends");
+	const provides = arrayField("provides");
+	const options = arrayField("options");
+	const noextract = arrayField("noextract");
+	const sources = arrayField("source");
+	const sha256sums = arrayField("sha256sums");
+
+	const lines: string[] = [];
+	const global = (key: string, val: string) =>
+		lines.push(`\t${key} = ${val}`);
+
+	lines.push(`pkgbase = ${pkgname}`);
+	global("pkgdesc", pkgdesc);
+	global("pkgver", pkgver);
+	global("pkgrel", pkgrel);
+	global("url", url);
+	for (const a of arch) global("arch", a);
+	for (const l of license) global("license", l);
+	for (const m of makedepends) global("makedepends", m);
+	for (const d of depends) global("depends", d);
+	for (const o of optdepends) global("optdepends", o);
+	for (const p of provides) global("provides", p);
+	for (const n of noextract) global("noextract", n);
+	for (const o of options) global("options", o);
+	for (const s of sources) global("source", s);
+	for (const s of sha256sums) global("sha256sums", s);
+	lines.push("");
+	lines.push(`pkgname = ${pkgname}`);
+
+	return lines.join("\n") + "\n";
 }
 
 async function main(): Promise<void> {
@@ -160,10 +230,9 @@ async function main(): Promise<void> {
 		updatePkgbuild(pkgbuildPath, latest.version, latest.commit, sha256);
 		console.error(`PKGBUILD updated to ${latest.version}`);
 
-		const pkgbuildDir = dirname(pkgbuildPath);
-		const srcinfoPath = join(pkgbuildDir, ".SRCINFO");
+		const srcinfoPath = join(dirname(pkgbuildPath), ".SRCINFO");
 		try {
-			const srcinfo = generateSrcinfo(pkgbuildDir);
+			const srcinfo = generateSrcinfo(pkgbuildPath);
 			writeFileSync(srcinfoPath, srcinfo);
 			console.error(".SRCINFO regenerated");
 		} catch (e) {
